@@ -1,0 +1,36 @@
+# Скомпільовані файли та результати збірки
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# Папки та файли налаштувань Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+*.dtbcache.v2
+*.futdcache.v2
+*.v12.suo
+*.v11.suo
+*.v10.suo
+
+# Файли баз даних та кешу Visual Studio
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.vsdx
+*.vsidx
+
+# Файли специфічні для мобільних додатків (MAUI / Android / iOS)
+*.apk
+*.aab
+*.ipa
+*.xap
+
+# Файли macOS (якщо проєкт відкриватиметься на Mac)
+.DS_Store
