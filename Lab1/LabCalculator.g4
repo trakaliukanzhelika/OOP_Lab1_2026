@@ -1,6 +1,8 @@
 // Grammar for Variant 63
 grammar LabCalculator;
 
+@namespace { Lab1 }
+
 compileUnit : expression EOF;
 
 // Syntax rules for parser
