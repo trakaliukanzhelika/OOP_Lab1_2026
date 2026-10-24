@@ -75,7 +75,7 @@ namespace Lab1
                     {
                         CurrentCellLabel.Text = cellName;
                         FormulaEntry.Text = spreadsheet.Cells.ContainsKey(cellName) ? spreadsheet.Cells[cellName].Expression : "";
-                        entry.BackgroundColor = Color.FromArgb("#A6B9BE"); // Колір виділення з палітри
+                        entry.BackgroundColor = Color.FromArgb("#A6B9BE"); 
                     };
 
                     entry.Completed += async (s, e) =>
