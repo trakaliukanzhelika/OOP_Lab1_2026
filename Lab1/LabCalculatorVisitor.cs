@@ -17,7 +17,7 @@ namespace Lab1
         {
             string cellName = context.GetText();
             if (!exprList.ContainsKey(cellName)){
-                throw new ArgumentException("Cell does not exist or is empty.");
+                throw new ArgumentException("Клітина пуста або не існує.");
             }
             return exprList[cellName];
         }
@@ -36,7 +36,7 @@ namespace Lab1
             int right = Convert.ToInt32(Visit(context.right));
             if (right == 0)
             {
-                throw new DivideByZeroException("You cannot divide by zero.");
+                throw new DivideByZeroException("Ділення на нуль неможливе.");
             }
             if (context.operatorToken.Type == LabCalculatorParser.MOD)
             {
@@ -68,7 +68,7 @@ namespace Lab1
                 case LabCalculatorParser.LE: return left <= right;
                 case LabCalculatorParser.GE: return left >= right;
                 case LabCalculatorParser.NE: return left != right;
-                default: throw new ArgumentException("Incorrect input.");
+                default: throw new ArgumentException("Введені дані неправильні.");
             }
         }
         public override object VisitAndExpr(LabCalculatorParser.AndExprContext context)

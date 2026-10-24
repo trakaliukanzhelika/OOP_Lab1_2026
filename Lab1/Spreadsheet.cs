@@ -28,15 +28,8 @@ namespace Lab1
             {
                 if (!String.IsNullOrWhiteSpace(cell.Expression))
                 {
-                    try
-                    {
-                        cell.Value = Calculator.Evaluate(cell.Expression, variables);
-                        variables[cell.Name] = cell.Value;
-                    }
-                    catch (Exception ex)
-                    {
-                        cell.Value = ex.Message;
-                    }
+                    cell.Value = Calculator.Evaluate(cell.Expression, variables);
+                    variables[cell.Name] = cell.Value;
                 }
             }
         }
