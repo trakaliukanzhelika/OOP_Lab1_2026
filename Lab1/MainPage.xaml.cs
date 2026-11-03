@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 
 namespace Lab1
 {
@@ -16,7 +11,6 @@ namespace Lab1
         Spreadsheet spreadsheet = new Spreadsheet();
         Dictionary<string, Entry> uiCells = new Dictionary<string, Entry>();
 
-     
         private bool showExpressions = false;
 
         public MainPage()
@@ -31,6 +25,9 @@ namespace Lab1
             SpreadsheetGrid.RowDefinitions.Clear();
             SpreadsheetGrid.ColumnDefinitions.Clear();
             uiCells.Clear();
+
+            // Row 0 - header with column letters (A, B, C...)
+            SpreadsheetGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
             for (int col = 0; col <= CountCol; col++)
             {
@@ -75,27 +72,27 @@ namespace Lab1
                     {
                         CurrentCellLabel.Text = cellName;
                         FormulaEntry.Text = spreadsheet.Cells.ContainsKey(cellName) ? spreadsheet.Cells[cellName].Expression : "";
-                        entry.BackgroundColor = Color.FromArgb("#A6B9BE"); 
+                        // While editing, the cell shows its expression (not its value),
+                        // otherwise the value would be saved instead of the expression
+                        entry.Text = FormulaEntry.Text;
+                        entry.BackgroundColor = Color.FromArgb("#A6B9BE");
                     };
 
-                    entry.Completed += async (s, e) =>
-                    {
-                        try
-                        {
-                            spreadsheet.SetCell(cellName, entry.Text);
-                            RefreshGrid();
-                        }
-                        catch (Exception ex)
-                        {
-                            await DisplayAlertAsync("Помилка синтаксису", ex.Message, "ОК");                        
-                            spreadsheet.Cells.Remove(cellName);
-                            entry.Text = "";
-                            RefreshGrid();
-                        }
-                    };
+                    // Enter just leaves the cell, the expression is applied in Unfocused
+                    entry.Completed += (s, e) => entry.Unfocus();
 
                     entry.Unfocused += async (s, e) =>
                     {
+                        entry.BackgroundColor = Colors.White;
+
+                        // Nothing was changed - nothing to recalculate
+                        string oldExpression = spreadsheet.Cells.ContainsKey(cellName) ? spreadsheet.Cells[cellName].Expression : "";
+                        if (entry.Text == oldExpression)
+                        {
+                            RefreshGrid();
+                            return;
+                        }
+
                         try
                         {
                             spreadsheet.SetCell(cellName, entry.Text);
@@ -103,12 +100,10 @@ namespace Lab1
                         }
                         catch (Exception ex)
                         {
-                            await DisplayAlertAsync("Помилка синтаксису", ex.Message, "ОК");
-                            spreadsheet.Cells.Remove(cellName);
-                            entry.Text = "";
+                            await DisplayAlertAsync("Помилка", ex.Message, "ОК");
+                            RemoveIfWrong(cellName);
                             RefreshGrid();
                         }
-                        entry.BackgroundColor = Colors.White;
                     };
 
                     uiCells[cellName] = entry;
@@ -147,7 +142,39 @@ namespace Lab1
             }
             catch (Exception ex)
             {
-                await DisplayAlertAsync("Помилка синтаксису", ex.Message, "ОК");
+                await DisplayAlertAsync("Помилка", ex.Message, "ОК");
+                RemoveIfWrong(currentCell);
+                RefreshGrid();
+            }
+        }
+
+        // If the entered expression itself is wrong, the cell is removed (as before).
+        // If the error is in another cell, the entered expression is kept.
+        private void RemoveIfWrong(string cellName)
+        {
+            if (spreadsheet.Cells.ContainsKey(cellName) && spreadsheet.Cells[cellName].Value is "#ПОМИЛКА")
+            {
+                spreadsheet.Cells.Remove(cellName);
+                FormulaEntry.Text = "";
+                if (uiCells.ContainsKey(cellName))
+                {
+                    uiCells[cellName].Text = "";
+                }
+            }
+        }
+
+        // Recalculates the table and shows errors, if there are any
+        private async Task RecalculateAsync()
+        {
+            try
+            {
+                spreadsheet.EvaluateAll();
+                RefreshGrid();
+            }
+            catch (Exception ex)
+            {
+                RefreshGrid();
+                await DisplayAlertAsync("Помилка під час перерахунку", ex.Message, "ОК");
             }
         }
 
@@ -178,11 +205,12 @@ namespace Lab1
                 bool downloaded = await driveHelper.DownloadFileAsync(path);
 
                 if (downloaded && File.Exists(path))
-                { 
+                {
                     string json = File.ReadAllText(path);
-                    spreadsheet.Cells = JsonSerializer.Deserialize<Dictionary<string, Cell>>(json);
-                    RefreshGrid();
+                    spreadsheet.Cells = JsonSerializer.Deserialize<Dictionary<string, Cell>>(json) ?? new Dictionary<string, Cell>();
+                    BuildGrid();
                     await DisplayAlertAsync("Успіх", "Таблицю завантажено з Google Drive!", "ОК");
+                    await RecalculateAsync();
                 }
                 else
                 {
@@ -198,12 +226,14 @@ namespace Lab1
         private async void OnHelpClicked(object sender, EventArgs e)
         {
             await DisplayAlertAsync("Допомога",
-                "Лабораторна робота №1\n" +
+                "Лабораторна робота №1*, варіант 63\n" +
                 "Студент: Тракалюк Анжеліка\n\n" +
                 "Інструкція:\n" +
                 "1. Клікніть на клітинку.\n" +
-                "2. Введіть вираз (наприклад A1+10) і натисніть Enter або 'Застосувати'.\n" +
-                "3. Кнопка 'Режим' перемикає показ формул та результатів.",
+                "2. Введіть вираз (наприклад max(A1, 10) >= 5 and not B1) і натисніть Enter або 'Застосувати'.\n" +
+                "3. Кнопка 'Режим' перемикає показ формул та результатів.\n" +
+                "4. '+ Рядок' / '− Рядок' та '+ Стовпець' / '− Стовпець' додають або прибирають останній рядок чи стовпець.\n\n" +
+                "Операції: mod, div, max(x, y), min(x, y), <=, >=, <>, not, and, or.",
                 "Зрозуміло");
         }
 
@@ -211,28 +241,59 @@ namespace Lab1
         {
             if (int.TryParse(ColCountEntry.Text, out int newCol) && int.TryParse(RowCountEntry.Text, out int newRow))
             {
-                if (newCol > 0 && newCol <= 26 && newRow > 0)
-                {
-                    CountCol = newCol;
-                    CountRow = newRow;
-
-                    BuildGrid();
-                    RefreshGrid();
-                }
-                else
-                {
-                    await DisplayAlertAsync("Помилка", "Кількість стовпців має бути від 1 до 26, а рядків - більше 0.", "ОК");
-                }
+                await ChangeTableSizeAsync(newCol, newRow);
             }
             else
             {
                 await DisplayAlertAsync("Помилка", "Введіть цілі числа.", "ОК");
             }
         }
-        private void OnClearCellClicked(object sender, EventArgs e)
+
+        private async void OnAddRowClicked(object sender, EventArgs e)
+        {
+            await ChangeTableSizeAsync(CountCol, CountRow + 1);
+        }
+
+        private async void OnRemoveRowClicked(object sender, EventArgs e)
+        {
+            await ChangeTableSizeAsync(CountCol, CountRow - 1);
+        }
+
+        private async void OnAddColumnClicked(object sender, EventArgs e)
+        {
+            await ChangeTableSizeAsync(CountCol + 1, CountRow);
+        }
+
+        private async void OnRemoveColumnClicked(object sender, EventArgs e)
+        {
+            await ChangeTableSizeAsync(CountCol - 1, CountRow);
+        }
+
+        // Used by "Змінити розмір" and by the +/- row/column buttons
+        private async Task ChangeTableSizeAsync(int newCol, int newRow)
+        {
+            if (newCol > 0 && newCol <= 26 && newRow > 0)
+            {
+                CountCol = newCol;
+                CountRow = newRow;
+                ColCountEntry.Text = CountCol.ToString();
+                RowCountEntry.Text = CountRow.ToString();
+
+                // Cells of the removed rows/columns are deleted,
+                // other cells may refer to them - so we recalculate
+                spreadsheet.RemoveCellsOutside(CountRow, CountCol);
+                BuildGrid();
+                await RecalculateAsync();
+            }
+            else
+            {
+                await DisplayAlertAsync("Помилка", "Кількість стовпців має бути від 1 до 26, а рядків - більше 0.", "ОК");
+            }
+        }
+
+        private async void OnClearCellClicked(object sender, EventArgs e)
         {
             string currentCell = CurrentCellLabel.Text;
-
 
             if (spreadsheet.Cells.ContainsKey(currentCell))
             {
@@ -244,6 +305,9 @@ namespace Lab1
             {
                 uiCells[currentCell].Text = "";
             }
+
+            // Other cells may refer to the cleared cell
+            await RecalculateAsync();
         }
 
         private async void OnClearTableClicked(object sender, EventArgs e)
@@ -253,9 +317,8 @@ namespace Lab1
             {
                 spreadsheet.Cells.Clear();
                 FormulaEntry.Text = "";
-                BuildGrid(); 
+                BuildGrid();
             }
         }
-
     }
 }

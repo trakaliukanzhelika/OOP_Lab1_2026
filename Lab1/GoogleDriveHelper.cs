@@ -1,8 +1,3 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
@@ -17,7 +12,7 @@ namespace Lab1
 
         private static string[] Scopes = { DriveService.Scope.DriveFile };
         private const string ApplicationName = "MAUI Spreadsheet Lab";
-        private const string FileName = "table.json"; 
+        private const string FileName = "table.json";
 
         private DriveService _service;
 
@@ -93,7 +88,7 @@ namespace Lab1
 
             if (file == null)
             {
-                return false; 
+                return false;
             }
 
             var getRequest = _service.Files.Get(file.Id);

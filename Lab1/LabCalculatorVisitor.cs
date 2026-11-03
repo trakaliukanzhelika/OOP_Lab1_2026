@@ -1,7 +1,4 @@
-﻿using Antlr4.Runtime.Misc;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Numerics;
 
 namespace Lab1
 {
@@ -9,22 +6,34 @@ namespace Lab1
     {
         // Dictionary<cellname, result>
         public Dictionary<string, object> exprList = new();
+
         public override object VisitNumExpr(LabCalculatorParser.NumExprContext context)
         {
-            return int.Parse(context.GetText());
+            return BigInteger.Parse(context.GetText());
         }
+
         public override object VisitCellExpr(LabCalculatorParser.CellExprContext context)
         {
             string cellName = context.GetText();
-            if (!exprList.ContainsKey(cellName)){
-                throw new ArgumentException("Клітина пуста або не існує.");
+            if (!exprList.ContainsKey(cellName))
+            {
+                throw new ArgumentException($"Клітинка {cellName} порожня або не існує.");
             }
-            return exprList[cellName];
+            object value = exprList[cellName];
+
+            // "" (not calculated yet) or "#ПОМИЛКА"
+            if (value is string)
+            {
+                throw new ArgumentException($"Клітинка {cellName} порожня або містить помилку.");
+            }
+            return value;
         }
+
         public override object VisitParenthesizedExpr(LabCalculatorParser.ParenthesizedExprContext context)
         {
             return Visit(context.expression());
         }
+
         public override object VisitCompileUnit(LabCalculatorParser.CompileUnitContext context)
         {
             return Visit(context.expression());
@@ -32,8 +41,8 @@ namespace Lab1
 
         public override object VisitArithmExpr(LabCalculatorParser.ArithmExprContext context)
         {
-            int left = Convert.ToInt32(Visit(context.left));
-            int right = Convert.ToInt32(Visit(context.right));
+            BigInteger left = ToNumber(Visit(context.left));
+            BigInteger right = ToNumber(Visit(context.right));
             if (right == 0)
             {
                 throw new DivideByZeroException("Ділення на нуль неможливе.");
@@ -47,22 +56,25 @@ namespace Lab1
                 return left / right;
             }
         }
+
         public override object VisitMaxExpr(LabCalculatorParser.MaxExprContext context)
         {
-            int left = Convert.ToInt32(Visit(context.left));
-            int right = Convert.ToInt32(Visit(context.right));
-            return Math.Max(left, right);
+            BigInteger left = ToNumber(Visit(context.left));
+            BigInteger right = ToNumber(Visit(context.right));
+            return BigInteger.Max(left, right);
         }
+
         public override object VisitMinExpr(LabCalculatorParser.MinExprContext context)
         {
-            int left = Convert.ToInt32(Visit(context.left));
-            int right = Convert.ToInt32(Visit(context.right));
-            return Math.Min(left, right);
+            BigInteger left = ToNumber(Visit(context.left));
+            BigInteger right = ToNumber(Visit(context.right));
+            return BigInteger.Min(left, right);
         }
+
         public override object VisitCompareExpr(LabCalculatorParser.CompareExprContext context)
         {
-            int left = Convert.ToInt32(Visit(context.left));
-            int right = Convert.ToInt32(Visit(context.right));
+            BigInteger left = ToNumber(Visit(context.left));
+            BigInteger right = ToNumber(Visit(context.right));
             switch (context.operatorToken.Type)
             {
                 case LabCalculatorParser.LE: return left <= right;
@@ -71,21 +83,38 @@ namespace Lab1
                 default: throw new ArgumentException("Введені дані неправильні.");
             }
         }
+
         public override object VisitAndExpr(LabCalculatorParser.AndExprContext context)
         {
-            bool left = Convert.ToBoolean(Visit(context.left));
-            bool right = Convert.ToBoolean(Visit(context.right));
+            bool left = ToBool(Visit(context.left));
+            bool right = ToBool(Visit(context.right));
             return left && right;
         }
+
         public override object VisitOrExpr(LabCalculatorParser.OrExprContext context)
         {
-            bool left = Convert.ToBoolean(Visit(context.left));
-            bool right = Convert.ToBoolean(Visit(context.right));
+            bool left = ToBool(Visit(context.left));
+            bool right = ToBool(Visit(context.right));
             return left || right;
         }
+
         public override object VisitNotExpr(LabCalculatorParser.NotExprContext context)
         {
-            return !(Convert.ToBoolean(Visit(context.expression())));
+            return !ToBool(Visit(context.expression()));
+        }
+
+        private static BigInteger ToNumber(object value)
+        {
+            if (value is BigInteger number) return number;
+            if (value is bool flag) return flag ? 1 : 0;
+            throw new ArgumentException($"Значення \"{value}\" не є числом.");
+        }
+
+        private static bool ToBool(object value)
+        {
+            if (value is bool flag) return flag;
+            if (value is BigInteger number) return number != 0;
+            throw new ArgumentException($"Значення \"{value}\" не є логічним.");
         }
     }
 }

@@ -13,7 +13,7 @@ expression
 	| operatorToken=MIN LPAREN left=expression COMMA right=expression RPAREN #MinExpr
 	| NUMBER #NumExpr
 	| CELL   #CellExpr
-// Arythmetic operations
+// Arithmetic operations
 	| left=expression operatorToken=(MOD | DIV) right=expression #ArithmExpr
 // Comparison operations
 	| left=expression operatorToken=(LE | GE | NE) right=expression #CompareExpr
@@ -31,7 +31,7 @@ DIV : 'div' | 'DIV';
 // 6
 MAX : 'max' | 'MAX';
 MIN : 'min' | 'MIN';
-// 9 
+// 9
 LE : '<=';
 GE : '>=';
 NE : '<>';
@@ -48,7 +48,3 @@ COMMA : ',';
 NUMBER : [0-9]+;
 WS : [ \t\r\n]+ -> channel(HIDDEN);
 CELL : [a-zA-Z]+[1-9][0-9]*;
-
-
-
-

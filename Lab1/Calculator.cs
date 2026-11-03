@@ -1,24 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Antlr4.Runtime;
 
 namespace Lab1
 {
     public class ThrowExceptionErrorListener : BaseErrorListener, IAntlrErrorListener<int>
     {
-        public override void SyntaxError(System.IO.TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        // Parser errors (wrong order of tokens)
+        public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            throw new ArgumentException($"Invalid Expression: {msg}", e);
+            throw new ArgumentException($"Синтаксична помилка (позиція {charPositionInLine + 1}): {msg}", e);
         }
-        public void SyntaxError(System.IO.TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+
+        // Lexer errors (unknown symbol)
+        public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            throw new ArgumentException($"Invalid Expression: {msg}", e);
+            throw new ArgumentException($"Синтаксична помилка (позиція {charPositionInLine + 1}): {msg}", e);
         }
     }
+
     public static class Calculator
     {
-
         public static object Evaluate(string expression, Dictionary<string, object> variables)
         {
             var lexer = new LabCalculatorLexer(new AntlrInputStream(expression));

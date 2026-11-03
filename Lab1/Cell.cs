@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Lab1
 {
@@ -8,6 +6,10 @@ namespace Lab1
     {
         public string Name { get; set; }
         public string Expression { get; set; }
+
+        // Not saved to the file: JSON cannot store BigInteger,
+        // and all values are recalculated after loading anyway
+        [JsonIgnore]
         public object Value { get; set; }
 
         public Cell(string name)
